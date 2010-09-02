@@ -1,12 +1,11 @@
 package zebra.v2
 
-import com.google.zxing.DecodeHintType;
 import com.google.zxing.BinaryBitmap;
-//import com.google.zxing.MonochromeBitmapSource;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.MultiFormatReader;
 import com.google.zxing.ReaderException;
 import com.google.zxing.Result;
+import com.google.zxing.NotFoundException
 import com.google.zxing.client.result.ParsedResult;
 import com.google.zxing.client.result.ResultParser;
 import com.google.zxing.LuminanceSource;
@@ -19,32 +18,36 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.net.URI;
-import java.nio.charset.Charset;
-import java.util.Hashtable;
 
 class UploadController {
 
-    def index = { render 'Hello, Grails' }
+    def index = {  }
 	def upload = {
 		def file = request.getFile('myFile')
+		ParsedResult parsedResult = null
+		Result result = null
 		if(file && !file.empty){
 			//file.transferTo( new File("ปลายทาง" )
 			def image = ImageIO.read(file.getInputStream())	
 			LuminanceSource source = new BufferedImageLuminanceSource(image);
 
 			BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
-			Result result = new MultiFormatReader().decode(bitmap);
-
-			ParsedResult parsedResult = ResultParser.parseResult(result);
-			render(file.getOriginalFilename() + " (format: " + result.getBarcodeFormat() +
-			  ", type: " + parsedResult.getType() + "):<br>\nRaw result: " + result.getText() +
-			 "<br>\nParsed result: " + parsedResult.getDisplayResult());
+			try {
+				result = new MultiFormatReader().decode(bitmap);
+				parsedResult = ResultParser.parseResult(result);
+			}
+			 catch(NotFoundException ex) {
+			   render ex.toString();	
+			   return ;
+			}
 		}
 		else {
 			render 'Error' 
 		} 
+
+		[format:result.getBarcodeFormat(), 'type':parsedResult.getType(), 'filename':file.getOriginalFilename(), 'result':result.getText(), 'parsedResult':parsedResult.getDisplayResult()]
 	}
+
 }
 /**
 *
